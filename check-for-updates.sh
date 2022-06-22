@@ -42,12 +42,12 @@ if [ -z "$CONTAINER" ]; then
     exit
 fi
 
-# run `apt update` and `apt list --upgradable` to check for package updates
+# run `apt-get update` and `apt list --upgradable` to check for package updates
 cmd buildah run "$CONTAINER" -- \
-    apt update >&2
+    apt-get update >&2
 
 echo + "PACKAGE_UPGRADES=\"\$(buildah run $(quote "$CONTAINER") -- apt list --upgradable)\"" >&2
-PACKAGE_UPGRADES="$(buildah run "$CONTAINER" -- apt list --upgradable)"
+PACKAGE_UPGRADES="$(buildah run "$CONTAINER" -- apt list --upgradable 2> /dev/null | sed -e '0,/^Listing.../d')"
 
 if [ -n "$PACKAGE_UPGRADES" ]; then
     echo "Image is out of date: Package upgrades are available" >&2

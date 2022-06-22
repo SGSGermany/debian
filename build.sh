@@ -35,10 +35,10 @@ echo + "MOUNT=\"\$(buildah mount $(quote "$CONTAINER"))\"" >&2
 MOUNT="$(buildah mount "$CONTAINER")"
 
 cmd buildah run "$CONTAINER" -- \
-    apt update
+    apt-get update
 
 cmd buildah run "$CONTAINER" -- \
-    apt upgrade --yes
+    apt-get dist-upgrade --yes
 
 cleanup "$CONTAINER"
 
