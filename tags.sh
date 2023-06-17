@@ -11,7 +11,7 @@
 # License-Filename: LICENSE
 
 set -eu -o pipefail
-export LC_ALL=C
+export LC_ALL=C.UTF-8
 
 [ -v CI_TOOLS ] && [ "$CI_TOOLS" == "SGSGermany" ] \
     || { echo "Invalid build environment: Environment variable 'CI_TOOLS' not set or invalid" >&2; exit 1; }
@@ -46,11 +46,10 @@ if [ -z "$VERSION" ]; then
     echo "Unable to read Debian's version file '/etc/debian_version': Unable to read from file" >&2
     exit 1
 elif ! [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
-    echo "Unable to read ebian's version file '/etc/debian_version': '$VERSION' is no valid version" >&2
+    echo "Unable to read Debian's version file '/etc/debian_version': '$VERSION' is no valid version" >&2
     exit 1
 fi
 
-VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
 VERSION_MAJOR="${BASH_REMATCH[1]}"
 
 # read codename from Debian's OS release file
