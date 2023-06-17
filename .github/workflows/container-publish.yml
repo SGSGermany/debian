@@ -24,6 +24,7 @@ jobs:
     strategy:
       matrix:
         BASE_IMAGE:
+          - docker.io/debian:bookworm
           - docker.io/debian:bullseye
           - docker.io/debian:buster
 

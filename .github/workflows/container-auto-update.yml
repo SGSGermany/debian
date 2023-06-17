@@ -26,6 +26,7 @@ jobs:
         BUILD_REF:
           - refs/heads/main
         BASE_IMAGE:
+          - docker.io/debian:bookworm
           - docker.io/debian:bullseye
           - docker.io/debian:buster
       fail-fast: false
