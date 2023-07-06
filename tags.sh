@@ -90,5 +90,6 @@ if [ "$VERSION" == "$(ls_versions "$VERSION_MAJOR" | head -n 1)" ]; then
     fi
 fi
 
+printf 'MILESTONE="%s"\n' "$VERSION_MAJOR"
 printf 'VERSION="%s"\n' "$VERSION"
 printf 'TAGS="%s"\n' "${TAGS[*]}"
