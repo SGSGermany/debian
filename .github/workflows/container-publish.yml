@@ -26,6 +26,7 @@ jobs:
         BASE_IMAGE:
           - docker.io/debian:bookworm
           - docker.io/debian:bullseye
+          - docker.io/debian:trixie
 
     env:
       REGISTRY: ghcr.io
