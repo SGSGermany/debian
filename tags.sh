@@ -19,6 +19,15 @@ export LC_ALL=C.UTF-8
 [ -v CI_TOOLS_PATH ] && [ -d "$CI_TOOLS_PATH" ] \
     || { echo "Invalid build environment: Environment variable 'CI_TOOLS_PATH' not set or invalid" >&2; exit 1; }
 
+[ -x "$(type -P podman 2>/dev/null)" ] \
+    || { echo "Missing script dependency: podman" >&2; exit 1; }
+
+[ -x "$(type -P skopeo 2>/dev/null)" ] \
+    || { echo "Missing script dependency: skopeo" >&2; exit 1; }
+
+[ -x "$(type -P jq 2>/dev/null)" ] \
+    || { echo "Missing script dependency: jq" >&2; exit 1; }
+
 source "$CI_TOOLS_PATH/helper/common.sh.inc"
 
 BUILD_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -65,14 +74,14 @@ fi
 ls_versions() {
     jq -re --arg "VERSION" "$1" \
         '.Tags[]|select(test("^[0-9]+\\.[0-9]+$") and startswith($VERSION + "."))' \
-        <<<"$BASE_IMAGE_REPO_TAGS" | sort_semver
+        <<< "$BASE_IMAGE_REPO_TAGS" | sort_semver
 }
 
 echo + "BASE_IMAGE_REPO_TAGS=\"\$(skopeo list-tags $(quote "docker://${BASE_IMAGE%:*}"))\"" >&2
 BASE_IMAGE_REPO_TAGS="$(skopeo list-tags "docker://${BASE_IMAGE%:*}" || true)"
 
-if [ -z "$BASE_IMAGE_REPO_TAGS" ]; then
-    echo "Unable to read tags from container repository 'docker://${BASE_IMAGE%:*}'" >&2
+if ! jq -e '.Tags[]' &> /dev/null <<< "$BASE_IMAGE_REPO_TAGS"; then
+    echo "Unable to read image tags from container repository 'docker://${BASE_IMAGE%:*}'" >&2
     exit 1
 fi
 

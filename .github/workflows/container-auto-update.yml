@@ -15,29 +15,15 @@ defaults:
     shell: bash -eu -o pipefail {0}
 
 jobs:
-  build:
+  generate-jobs:
+    name: Generate jobs
+
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
 
-    strategy:
-      matrix:
-        BUILD_REF:
-          - refs/heads/main
-        BASE_IMAGE:
-          - docker.io/debian:bookworm
-          - docker.io/debian:bullseye
-          - docker.io/debian:trixie
-      fail-fast: false
-      max-parallel: 1
-
-    env:
-      REGISTRY: ghcr.io
-      OWNER: sgsgermany
-      IMAGE: debian
-      BUILD_REF: ${{ matrix.BUILD_REF }}
-      BASE_IMAGE: ${{ matrix.BASE_IMAGE }}
+    outputs:
+      BUILD_MATRIX: ${{ steps.generate-jobs.outputs.BUILD_MATRIX }}
 
     steps:
       - name: Setup CI tools
@@ -48,8 +34,51 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ env.BUILD_REF }}
+
+      - name: Generate jobs
+        id: generate-jobs
+        run: |
+          MILESTONES="$(./branches.sh)" || EXIT_CODE=$?
+          
+          echo ::group::Jobs list
+          echo "$MILESTONES"
+          echo ::endgroup::
+          
+          echo "BUILD_MATRIX=$([ -z "$MILESTONES" ] || jq -Rcn '{"MILESTONE": [inputs]}' <<< "$MILESTONES")" >> $GITHUB_OUTPUT
+          exit ${EXIT_CODE:-0}
+
+  build:
+    name: Build & publish container
+
+    needs: generate-jobs
+    if: ${{ always() && needs.generate-jobs.outputs.BUILD_MATRIX }}
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    concurrency: build-${{ matrix.MILESTONE }}
+
+    strategy:
+      matrix: ${{ fromJSON(needs.generate-jobs.outputs.BUILD_MATRIX) }}
+      fail-fast: false
+
+    env:
+      REGISTRY: ghcr.io
+      OWNER: sgsgermany
+      IMAGE: debian
+      MILESTONE: ${{ matrix.MILESTONE }}
+
+    steps:
+      - name: Setup CI tools
+        run: |
+          . <(curl -fsS -L "$CI_TOOLS_SETUP" | bash -s ~/ci-tools)
+          echo "CI_TOOLS=$CI_TOOLS" | tee -a "$GITHUB_ENV"
+          echo "CI_TOOLS_PATH=$CI_TOOLS_PATH" | tee -a "$GITHUB_ENV"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Log into container registry ${{ env.REGISTRY }}
         uses: redhat-actions/podman-login@v1
